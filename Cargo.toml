@@ -1,0 +1,21 @@
+[package]
+name = "tmdb-cli"
+version = "0.1.0"
+authors = ["michael <mcarson898@gmail.com>"]
+edition = "2018"
+license = "MIT"
+description = "A TMDB client that provides async and sync clients"
+repository = "https://github.com/mjcarson/tmdb-cli.git"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+sync = []
+
+[dependencies]
+chrono = { version = "0.4.19", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+reqwest = { version = "0.10", features = ["json"] }
+tokio = { version = "0.2", features = ["full"] }
+syncwrap = { version = "0.2.0" }
+futures = "0.3"
