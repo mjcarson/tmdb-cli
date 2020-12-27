@@ -1,10 +1,10 @@
 use chrono::prelude::*;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 
 use super::{Genre, ProductionCompany, ProductionCountry, Language};
 
 /// Details from searching for [`Movie`] by name
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Movie {
   /// The path to the poster for this movie
   pub poster_path: Option<String>,
@@ -38,7 +38,7 @@ pub struct Movie {
 }
 
 /// A cursor from a movie search
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct MovieList {
   /// What page in the search this cursor is for
   pub page: u64,
@@ -51,7 +51,7 @@ pub struct MovieList {
 }
 
 /// Details on a Movies
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct MovieDetails {
   /// Whether this movie is an adult movie or not
   pub adult: bool,

@@ -1,5 +1,4 @@
-use super::core::Core;
-use crate::libs::models::{MovieList, MovieDetails};
+use crate::libs::models::{MovieList, MovieDetails, Credits};
 use crate::{client, opt_param, get};
 
 /// Movie search cursor
@@ -211,13 +210,45 @@ impl Movies{
   /// # assert!(search.is_ok())
   /// # }
   /// ```
+  #[syncwrap::wrap]
   pub async fn details(&self, id: i64) -> Result<MovieDetails, reqwest::Error> {
     // build url to query
     let url = format!("{}/3/movie/{}", &self.host, id);
     // build a request using the our token and query
     let req = self.client.get(&url)
       .query(&[("api_key", &self.token)]);
-    // send request and build a MovieList from the response
+    // send request and build a MovieDetails object from the response
     get!(self, req)?.json::<MovieDetails>().await
+  }
+ 
+  /// Get the credis for a movie by id
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - The ID of the movie to retrieve the credits for
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// pub use tmdb_cli::Client;
+  ///
+  /// # #[tokio::main]
+  /// # async fn main() {
+  /// // build a client
+  /// let tmdb = Client::from_env();
+  /// // get the credits for a movie
+  /// let credits = tmdb.movies.credits(157336).await;
+  /// # assert!(credits.is_ok())
+  /// # }
+  /// ```
+  #[syncwrap::wrap]
+  pub async fn credits(&self, id: i64) -> Result<Credits, reqwest::Error> {
+    // build url to query
+    let url = format!("{}/3/movie/{}/credits", &self.host, id);
+    // build a request using the our token and query
+    let req = self.client.get(&url)
+      .query(&[("api_key", &self.token)]);
+    // send request and build a Credits object from the response
+    get!(self, req)?.json::<Credits>().await
   }
 }

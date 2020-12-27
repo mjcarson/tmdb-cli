@@ -17,5 +17,4 @@ chrono = { version = "0.4.19", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 reqwest = { version = "0.10", features = ["json"] }
 tokio = { version = "0.2", features = ["full"] }
-syncwrap = { version = "0.2.0" }
-futures = "0.3"
+syncwrap = { version = "0.2.1" }
