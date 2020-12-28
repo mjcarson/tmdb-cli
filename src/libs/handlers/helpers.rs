@@ -11,8 +11,8 @@ macro_rules! client {
 #[macro_export]
 macro_rules! opt_param {
   ($params:expr, $name:expr, $opt:expr) => {
-    if let Some(opt) = $opt.as_ref() {
-      $params.push(($name, opt));
+    if let Some(opt) = $opt.take() {
+      $params.push(($name.into(), opt));
     }
   }
 }

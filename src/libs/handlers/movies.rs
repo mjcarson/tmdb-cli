@@ -1,4 +1,5 @@
-use crate::libs::models::{MovieList, MovieDetails, Credits};
+use super::Cursor;
+use crate::libs::models::{Movie, MovieDetails, Credits, Review};
 use crate::{client, opt_param, get};
 
 /// Movie search cursor
@@ -45,25 +46,23 @@ impl<'a> MovieSearch<'a> {
   /// # }
   /// ```
   #[syncwrap::wrap]
-  pub async fn exec(&self) -> Result<MovieList, reqwest::Error> {
+  pub async fn exec(mut self) -> Result<Cursor<Movie>, reqwest::Error> {
     // cast page to a string
-    let page = self.page.to_string();
     let adult = self.adult.to_string();
     // build the url query params
-    let mut params = Vec::with_capacity(3);
-    params.push(("api_key", &self.handler.token));
-    params.push(("query", &self.query));
-    params.push(("page", &page));
-    params.push(("adult", &adult));
+    let mut params: Vec<(String, String)> = Vec::with_capacity(2);
+    params.push(("query".into(), self.query));
+    params.push(("adult".into(), adult));
     // add any optional params if they exist
     opt_param!(params, "region", self.region);
     opt_param!(params, "year", self.year);
     opt_param!(params, "primary_year", self.primary_year);
     opt_param!(params, "language", self.language);
-    // build a request using the our token and query
-    let req = self.handler.client.get(&self.url).query(&params);
-    // send request and build a MovieList from the response
-    get!(self.handler, req)?.json::<MovieList>().await
+    // build cursor for this search
+    Cursor::new(self.url, &self.handler.token)
+      .page(self.page)
+      .params(params)
+      .next_page().await
   }
 
   /// Change the current page of our search
@@ -129,12 +128,12 @@ pub struct Movies {
   /// The URL/ip to reach tmdb at
   host: String,
   /// A reqwest client object
-  client: reqwest::Client,
+  pub client: reqwest::Client,
   /// A token to use when authenticating
-  token: String,
+  pub token: String,
 }
 
-impl Movies{
+impl Movies {
   /// Create a new Movies handler
   ///
   /// # Arguments
@@ -250,5 +249,33 @@ impl Movies{
       .query(&[("api_key", &self.token)]);
     // send request and build a Credits object from the response
     get!(self, req)?.json::<Credits>().await
+  }
+  
+  /// Builds a cursor for the reviews for a movie
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - The ID of the movie to retrieve reviews for
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// pub use tmdb_cli::Client;
+  ///
+  /// # #[tokio::main]
+  /// # async fn main() {
+  /// // build a client
+  /// let tmdb = Client::from_env();
+  /// // get the reviews for a movie
+  /// let reviews = tmdb.movies.reviews(157336).await;
+  /// # assert!(reviews.is_ok())
+  /// # }
+  /// ```
+  #[syncwrap::wrap]
+  pub async fn reviews(&self, id: i64) -> Result<Cursor<Review>, reqwest::Error> {
+    // build the url to query
+    let url = format!("{}/3/movie/{}/reviews", &self.host, id);
+    // build our cursor
+    Cursor::new(url, &self.token).next_page().await
   }
 }
