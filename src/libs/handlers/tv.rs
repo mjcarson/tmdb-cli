@@ -1,32 +1,28 @@
 use super::Cursor;
-use crate::libs::models::{Credits, Movie, MovieDetails, Review};
+use crate::libs::models::{Credits, Show, ShowDetails, Review};
 use crate::{client, get, opt_param};
 
-/// Movie search cursor
+/// Show search cursor
 #[derive(Clone)]
-pub struct MovieSearch<'a> {
+pub struct ShowSearch<'a> {
     /// The url to use
     url: String,
     /// The handler being used to perform this search
-    handler: &'a Movies,
+    handler: &'a Tv,
     /// The current page of this search
     pub page: u64,
     /// The query in use
     pub query: String,
-    /// The region movies returned must be from
-    pub region: Option<String>,
-    /// The year movies returned must have been released in
-    pub year: Option<String>,
-    /// The primary year movies returned must have been released in
-    pub primary_year: Option<String>,
-    /// The language movies returned must be in
+    /// The language that shows returned must be in
     pub language: Option<String>,
-    /// Whether adult movies should be returned
+    /// The year that shows returned must have been first aired in
+    pub year: Option<String>,
+    /// Whether adult shows should be returned
     pub adult: bool,
 }
 
-impl<'a> MovieSearch<'a> {
-    /// Search for movies on the currently selected page
+impl<'a> ShowSearch<'a> {
+    /// Search for shows on the currently selected page
     ///
     /// # Examples
     ///
@@ -37,27 +33,26 @@ impl<'a> MovieSearch<'a> {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // serach for a movie
-    /// let search = tmdb.movies.search("13 Hours")
-    ///   .year(2016)
+    /// // serach for a show
+    /// let search = tmdb.tv.search("Red Vs. Blue")
+    ///   .language("en-us")
+    ///   .year(2003)
     ///   .exec()
     ///   .await;
     /// # assert!(search.is_ok())
     /// # }
     /// ```
     #[syncwrap::wrap]
-    pub async fn exec(mut self) -> Result<Cursor<Movie>, reqwest::Error> {
+    pub async fn exec(mut self) -> Result<Cursor<Show>, reqwest::Error> {
         // cast page to a string
         let adult = self.adult.to_string();
         // build the url query params
         let mut params: Vec<(String, String)> = Vec::with_capacity(2);
         params.push(("query".into(), self.query));
-        params.push(("adult".into(), adult));
+        params.push(("include_adult".into(), adult));
         // add any optional params if they exist
-        opt_param!(params, "region", self.region);
-        opt_param!(params, "year", self.year);
-        opt_param!(params, "primary_year", self.primary_year);
         opt_param!(params, "language", self.language);
+        opt_param!(params, "first_air_date_year", self.year);
         // build cursor for this search
         Cursor::new(self.url, &self.handler.token)
             .page(self.page)
@@ -76,17 +71,7 @@ impl<'a> MovieSearch<'a> {
         self
     }
 
-    /// Sets the region you want movies returned from this search to be from
-    ///
-    /// # Arguments
-    ///
-    /// * `region` - The region to filter movies by
-    pub fn region(mut self, region: String) -> Self {
-        self.region = Some(region);
-        self
-    }
-
-    /// Sets the year movies returned from this search must have been released on
+    /// Sets the year shows returned from this search must have first aired in
     ///
     /// # Arguments
     ///
@@ -96,17 +81,7 @@ impl<'a> MovieSearch<'a> {
         self
     }
 
-    /// Sets the primary year movies returned from this search must have been released on
-    ///
-    /// # Arguments
-    ///
-    /// * `primary_year` - The primary year of release to filter on
-    pub fn primary_year(mut self, primary_year: u64) -> Self {
-        self.primary_year = Some(primary_year.to_string());
-        self
-    }
-
-    /// Sets the language that movies returned by this search must be in
+    /// Sets the language that shows returned by this search must be in
     ///
     /// # Arguments
     ///
@@ -116,16 +91,16 @@ impl<'a> MovieSearch<'a> {
         self
     }
 
-    /// Allows adult movies to be returned by this search
+    /// Allows adult shows to be returned by this search
     pub fn adult(mut self) -> Self {
         self.adult = true;
         self
     }
 }
 
-/// Handlers for Movie focused routes
+/// Handlers for TV show focused routes
 #[derive(Clone)]
-pub struct Movies {
+pub struct Tv {
     /// The URL/ip to reach tmdb at
     host: String,
     /// A reqwest client object
@@ -134,8 +109,8 @@ pub struct Movies {
     pub token: String,
 }
 
-impl Movies {
-    /// Create a new Movies handler
+impl Tv {
+    /// Create a new TV show handler
     ///
     /// # Arguments
     ///
@@ -144,15 +119,15 @@ impl Movies {
     pub fn new(host: &str, token: &str) -> Self {
         // build client
         let client = client!();
-        // build movies handler
-        Movies {
+        // build shows handler
+        Tv {
             host: host.to_owned(),
             client,
             token: token.to_owned(),
         }
     }
 
-    /// Search for a movie
+    /// Search for a show
     ///
     /// # Arguments
     ///
@@ -167,34 +142,32 @@ impl Movies {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // serach for a movie
-    /// let search = tmdb.movies.search("13 Hours")
-    ///   .year(2016)
+    /// // serach for a show
+    /// let search = tmdb.tv.search("Red Vs. Blue")
+    ///   .year(2003)
     ///   .exec()
     ///   .await;
     /// # assert!(search.is_ok())
     /// # }
     /// ```
-    pub fn search<T: Into<String>>(&self, query: T) -> MovieSearch {
-        MovieSearch {
-            url: format!("{}/3/search/movie", &self.host),
+    pub fn search<T: Into<String>>(&self, query: T) -> ShowSearch {
+        ShowSearch {
+            url: format!("{}/3/search/tv", &self.host),
             handler: self,
             // start at page 1 because tmdb doesn't use 0 based indexes
             page: 1,
             query: query.into(),
-            region: None,
             year: None,
-            primary_year: None,
             language: None,
             adult: false,
         }
     }
 
-    /// Get details on a movie by id
+    /// Get details on a show by id
     ///
     /// # Arguments
     ///
-    /// * `id` - The ID of the movie to retrieve details on
+    /// * `id` - The ID of the show to retrieve details on
     ///
     /// # Examples
     ///
@@ -205,26 +178,26 @@ impl Movies {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // serach for a movie
-    /// let search = tmdb.movies.details(157336).await;
+    /// // serach for a show
+    /// let search = tmdb.tv.details(39373).await;
     /// # assert!(search.is_ok())
     /// # }
     /// ```
     #[syncwrap::wrap]
-    pub async fn details(&self, id: i64) -> Result<MovieDetails, reqwest::Error> {
+    pub async fn details(&self, id: i64) -> Result<ShowDetails, reqwest::Error> {
         // build url to query
-        let url = format!("{}/3/movie/{}", &self.host, id);
+        let url = format!("{}/3/tv/{}", &self.host, id);
         // build a request using the our token and query
         let req = self.client.get(&url).query(&[("api_key", &self.token)]);
-        // send request and build a MovieDetails object from the response
-        get!(self, req)?.json::<MovieDetails>().await
+        // send request and build a ShowDetails object from the response
+        get!(self, req)?.json::<ShowDetails>().await
     }
 
-    /// Get the credis for a movie by id
+    /// Get the credis for a show by id
     ///
     /// # Arguments
     ///
-    /// * `id` - The ID of the movie to retrieve the credits for
+    /// * `id` - The ID of the show to retrieve the credits for
     ///
     /// # Examples
     ///
@@ -235,26 +208,26 @@ impl Movies {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // get the credits for a movie
-    /// let credits = tmdb.movies.credits(157336).await;
+    /// // get the credits for a show
+    /// let credits = tmdb.tv.credits(39373).await;
     /// # assert!(credits.is_ok())
     /// # }
     /// ```
     #[syncwrap::wrap]
     pub async fn credits(&self, id: i64) -> Result<Credits, reqwest::Error> {
         // build url to query
-        let url = format!("{}/3/movie/{}/credits", &self.host, id);
+        let url = format!("{}/3/tv/{}/credits", &self.host, id);
         // build a request using the our token and query
         let req = self.client.get(&url).query(&[("api_key", &self.token)]);
         // send request and build a Credits object from the response
         get!(self, req)?.json::<Credits>().await
     }
 
-    /// Builds a cursor for the reviews for a movie
+    /// Builds a cursor for reviews for a tv show
     ///
     /// # Arguments
     ///
-    /// * `id` - The ID of the movie to retrieve reviews for
+    /// * `id` - The ID of the show to retrieve reviews for
     ///
     /// # Examples
     ///
@@ -265,23 +238,23 @@ impl Movies {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // get the reviews for a movie
-    /// let reviews = tmdb.movies.reviews(157336).exec().await;
+    /// // get the reviews for a show
+    /// let reviews = tmdb.tv.reviews(39373).exec().await;
     /// # assert!(reviews.is_ok())
     /// # }
     /// ```
     pub fn reviews(&self, id: i64) -> Cursor<Review> {
         // build the url to query
-        let url = format!("{}/3/movie/{}/reviews", &self.host, id);
+        let url = format!("{}/3/tv/{}/reviews", &self.host, id);
         // build our cursor
         Cursor::new(url, &self.token)
     }
 
-    /// Builds a cursor for movies to recommend based another movie
+    /// Builds a cursor for shows to recommend based another tv show
     ///
     /// # Arguments
     ///
-    /// * `id` - The ID of the movie to base our recommendations on
+    /// * `id` - The ID of the show to base our recommendations on
     ///
     /// # Examples
     ///
@@ -292,25 +265,25 @@ impl Movies {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // get the recommendations for a movie
-    /// let recommendations = tmdb.movies.recommendations(157336).exec().await;
+    /// // get the recommendations for a show
+    /// let recommendations = tmdb.tv.recommendations(39373).exec().await;
     /// # assert!(recommendations.is_ok())
     /// # }
     /// ```
-    pub fn recommendations(&self, id: i64) -> Cursor<Movie> {
+    pub fn recommendations(&self, id: i64) -> Cursor<Show> {
         // build the url to query
-        let url = format!("{}/3/movie/{}/recommendations", &self.host, id);
+        let url = format!("{}/3/tv/{}/recommendations", &self.host, id);
         // build our cursor
         Cursor::new(url, &self.token)
     }
 
-    /// Builds a cursor for movies that are similar to a movie
+    /// Builds a cursor for shows that are similar to a tv show
     ///
     /// This is different from the recommendation system as it looks at genres and keywords.
     ///
     /// # Arguments
     ///
-    /// * `id` - The ID of the movie to get similar movies for
+    /// * `id` - The ID of the show to get similar shows for
     ///
     /// # Examples
     ///
@@ -321,19 +294,19 @@ impl Movies {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // get movies that our similar to our movie
-    /// let similar = tmdb.movies.similar(157336).exec().await;;
+    /// // get shows that our similar to our show
+    /// let similar = tmdb.tv.similar(39373).exec().await;;
     /// # assert!(similar.is_ok())
     /// # }
     /// ```
-    pub fn similar(&self, id: i64) -> Cursor<Movie> {
+    pub fn similar(&self, id: i64) -> Cursor<Show> {
         // build the url to query
-        let url = format!("{}/3/movie/{}/similar", &self.host, id);
+        let url = format!("{}/3/tv/{}/similar", &self.host, id);
         // build our cursor
         Cursor::new(url, &self.token)
     }
 
-    /// Builds a cursor for movies that are popular
+    /// Builds a cursor for shows that are popular
     ///
     /// This lists refreshes daily.
     ///
@@ -346,8 +319,8 @@ impl Movies {
     /// # async fn main() {
     /// // build a client
     /// let tmdb = Client::from_env();
-    /// // get movies that are popular in the us
-    /// let popular = tmdb.movies.popular()
+    /// // get shows that are popular in the us
+    /// let popular = tmdb.tv.popular()
     ///   // you can optionally set a region to filter on
     ///   .param("region", "USA")
     ///   .exec()
@@ -355,9 +328,9 @@ impl Movies {
     /// # assert!(popular.is_ok())
     /// # }
     /// ```
-    pub fn popular(&self) -> Cursor<Movie> {
+    pub fn popular(&self) -> Cursor<Show> {
         // build the url to query
-        let url = format!("{}/3/movie/popular", &self.host);
+        let url = format!("{}/3/tv/popular", &self.host);
         Cursor::new(url, &self.token)
     }
 }

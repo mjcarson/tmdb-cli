@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// A Production company for a movie or TV show
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ProductionCompany {
     /// The name of this production company
     pub name: String,
@@ -14,7 +14,7 @@ pub struct ProductionCompany {
 }
 
 /// A country where production of a movie or TV show took place at
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ProductionCountry {
     /// The ISO 3166-1 code for the name of this country
     pub iso_3166_1: String,
