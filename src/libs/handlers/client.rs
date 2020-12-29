@@ -1,9 +1,13 @@
 use std::env;
 
-use super::movies::Movies;
+use super::{movies::Movies, tv::Tv};
 
+/// A TMDB client
 pub struct Client {
+    /// Movie focused routes handlers
     pub movies: Movies,
+    /// TV focused routes handlers
+    pub tv: Tv
 }
 
 impl Client {
@@ -24,7 +28,8 @@ impl Client {
         // default tmdb host
         let host = "https://api.themoviedb.org";
         let movies = Movies::new(host, &token);
-        Client { movies }
+        let tv = Tv::new(host, &token);
+        Client { movies, tv }
     }
 
     /// Creates a new client with a token pulled from the environment

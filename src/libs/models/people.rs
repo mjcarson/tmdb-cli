@@ -20,7 +20,7 @@ pub struct Cast {
     /// The path to retrieve this cast members profile at
     pub profile_path: Option<String>,
     /// The legacy unique id for this cast member
-    pub cast_id: i64,
+    pub cast_id: Option<i64>,
     /// The name of the character they play in this particular casting
     pub character: String,
     /// An ID for this specific casting in order to differentiate people with multiple credits in the same cast
